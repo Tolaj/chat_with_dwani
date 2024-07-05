@@ -97,7 +97,4 @@ def get_chat():
     return list(chats)
 
 if __name__ == '__main__':
-    # for deployment
-    # to make it work for both production and development
-    port = 5123
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=6123, debug=True)
