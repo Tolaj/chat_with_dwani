@@ -15,7 +15,7 @@ chats_collection = db['chats']
 
 @app.route('/') # this decorator create the home route
 def home ():
-    return render_template('index.html')
+    return '<h1>hello world<h1/>'
 
 @app.route('/joinChat', methods= ['GET','POST'])
 def joinChat(): 
