@@ -3,10 +3,11 @@ from flask import Flask, render_template, request, redirect, url_for
 import os # importing operating system module
 from config import get_database
 import json
+from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 # to stop caching static file
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 db = get_database()
 users_collection = db['users']
 chats_collection = db['chats']
