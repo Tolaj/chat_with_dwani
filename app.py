@@ -8,11 +8,14 @@ app = Flask(__name__)
 # to stop caching static file
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+# database ----------------------------------------------------
 db = get_database()
 users_collection = db['users']
 chats_collection = db['chats']
 
 
+# routes ----------------------------------------------------
 @app.route('/') # this decorator create the home route
 def home ():
     return render_template('index.html')
@@ -70,6 +73,8 @@ def chat():
         return render_template('chat.html',username=username, myChatList=myChatList,strangerChatList=strangerChatList)   
 
 
+# user defined methods ----------------------------------------------------
+
 # User model functions
 def create_user(username,password):
     user = {
@@ -97,5 +102,8 @@ def get_chat():
     chats = chats_collection.find()
     return list(chats)
 
+
+# main method ----------------------------------------------------
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6123, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
