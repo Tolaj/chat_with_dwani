@@ -18,47 +18,7 @@
         >
           <div class="flex flex-col h-full overflow-x-auto mb-4">
             <div class="flex flex-col h-full">
-              <div class="grid grid-cols-12 gap-y-2">
-
-
-
-
-                {% for chat in strangerChatList %}
-                <div class="col-start-1 col-end-8 p-3 rounded-lg">
-                    <div class="flex flex-row items-center">
-                        <div
-                        class="flex items-center justify-center h-8 p-2 px-4 text-white w-auto rounded-2xl bg-indigo-500 flex-shrink-0"
-                        >
-                        {{chat.username}}
-                        </div>
-                        <div
-                        class="relative ml-3 text-sm bg-white py-2 px-4 shadow rounded-xl"
-                        >
-                        <div>{{chat.chat}}</div>
-                        </div>
-                    </div>
-                    </div>
-                 {% endfor %}
-
-
-                 {% for chat in myChatList %}
-
-                    <div class="col-start-6 col-end-13 p-3 rounded-lg">
-                  <div class="flex items-center justify-start flex-row-reverse">
-                    <div
-                        class="flex items-center justify-center h-8 p-2 px-4 text-white w-auto rounded-2xl bg-indigo-500 flex-shrink-0"
-                        >
-                      {{chat.username}}
-                    </div>
-                    <div
-                      class="relative mr-3 text-sm bg-indigo-100 py-2 px-4 shadow rounded-xl"
-                    >
-                      <div>{{chat.chat}}</div>
-                    </div>
-                  </div>
-                </div>
-               
-                {% endfor %}
+              <div id="chatBox" class="grid grid-cols-12 gap-y-2">
 
 
 
@@ -69,37 +29,27 @@
 
 
 
-          <form action="/createChat" method="POST"
+          <form onsubmit=chatFunction(event)
             class="flex flex-row items-center h-16 rounded-xl bg-white w-full px-4"
           >
 
-          <input className='hidden' type="text" id="username" name="userName" value="{{ username }}" ><br><br>
+          <!-- <input className='hidden' type="text" id="username" name="userName" value="{{ username }}" ><br><br> -->
 
-            <div>
-              <button
-                class="flex items-center justify-center text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                  ></path>
-                </svg>
-              </button>
-            </div>
+          <div class="ml-4">
+            <button
+            type="button"
+            id="leaveButton"
+              class="flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-xl text-white px-4 py-1 flex-shrink-0"
+            >
+              <span>Leave Room</span>
+             
+            </button>
+          </div>
             <div class="flex-grow ml-4">
               <div class="relative w-full">
                 <input
                   type="text"
-                  name="chat"
+                  name="msg"
                   class="flex w-full border rounded-xl focus:outline-none focus:border-indigo-300 pl-4 h-10"
                 />
                 <button
@@ -124,6 +74,7 @@
             </div>
             <div class="ml-4">
               <button
+              type="submit"
                 class="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white px-4 py-1 flex-shrink-0"
               >
                 <span>Send</span>
@@ -154,6 +105,86 @@
     </div>
   </div>
 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+
+  <script type="text/javascript" charset="utf-8">
+      var socket = io();
+      var username = "{{username}}"
+      var room="{{room}}"
+      var joinedRoom = false; // Flag to track joining state
+
+      socket.on('connect', () => {
+          if (!joinedRoom) { // Join only if not already joined
+
+              socket.username = username;
+              socket.emit('join', { username, room });
+              joinedRoom = true;
+          }
+      });
+
+      
+  function chatFunction ( event) {
+    event.preventDefault();
     
+    
+    const formData = new FormData(event.target);  // Get the form element from the event
+
+            const msg = formData.get('msg');  // Retrieve username value
+            // const room = room  // Retrieve room value
+            socket.emit('message', {'username':"{{username}}",'msg': msg, 'room': "{{room}}"});
+
+}
+
+  socket.on('message', function(data) {
+            var chatBox = document.getElementById('chatBox');
+
+
+            if(data['username'] == "{{username}}"){
+              chatBox.innerHTML += `<div class="col-start-6 col-end-13 p-3 rounded-lg">
+                  <div class="flex items-center justify-start flex-row-reverse">
+                    <div
+                        class="flex items-center justify-center h-8 p-2 px-4 text-white w-auto rounded-2xl bg-indigo-500 flex-shrink-0"
+                        >
+                        ${data['username']}
+
+                        </div>
+                    <div
+                      class="relative mr-3 text-sm bg-indigo-100 py-2 px-4 shadow rounded-xl"
+                    >
+                        <div> ${data['msg']}</div>
+
+                    </div>
+                  </div>
+                </div>`
+            }else{
+              chatBox.innerHTML += `<div  class="col-start-1 col-end-8 p-3 rounded-lg">
+                    <div class="flex flex-row items-center">
+                        <div
+                        class="flex items-center justify-center h-8 p-2 px-4 text-white w-auto rounded-2xl bg-indigo-500 flex-shrink-0"
+                        >
+                        ${data['username']}
+                        </div>
+                        <div
+                        class="relative ml-3 text-sm bg-white py-2 px-4 shadow rounded-xl"
+                        >
+                        <div> ${data['msg']}</div>
+                        </div>
+                    </div>
+                  </div>`
+            }
+              
+           
+            
+        });
+
+
+  document.getElementById('leaveButton').onclick = function() {
+            socket.emit('leave', {'username': username, 'room': room});
+            window.location.href = '/'
+        };
+
+</script>
 </body>
 </html>

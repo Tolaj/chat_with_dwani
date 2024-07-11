@@ -4,106 +4,90 @@ import os # importing operating system module
 from config import get_database
 import json
 from flask_cors import CORS, cross_origin
+from flask_socketio import SocketIO,join_room, leave_room,emit,send
+
+
+
 app = Flask(__name__)
 # to stop caching static file
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['SECRET_KEY'] = 'secret!'
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app)
 
 # database ----------------------------------------------------
 db = get_database()
-users_collection = db['users']
-chats_collection = db['chats']
+
+rooms_collection = db['rooms']
 
 
 # routes ----------------------------------------------------
 @app.route('/') # this decorator create the home route
 def home ():
-    return render_template('index.html')
+    rooms = [dict["roomID"] for dict in get_room()]
+    return render_template('index.html',rooms=rooms)
 
-@app.route('/joinChat', methods= ['GET','POST'])
-def joinChat(): 
+@app.route('/joinRoom', methods= ['GET','POST'])
+def joinRoom(): 
     if request.method =='POST':
-        username = request.form['userName']
-        password = request.form['password']
-        user = {
-                'username': username,
-                'password': password
-            }
-        existingUser = users_collection.find_one(user)
-    
-        if existingUser and existingUser['password'] == password:
-            
-            chatList = get_chat()
-            myChatList = [item for item in chatList if item['username'] == username]
-            strangerChatList = [item for item in chatList if item['username'] != username]
-            return render_template('chat.html',username=username, myChatList=myChatList,strangerChatList=strangerChatList)
-        else:
-            return render_template('index.html', alertMsg = 'user does not exist with this username or incorrect password')
-
-
-
-@app.route('/createUser', methods= ['GET','POST'])
-def user(): 
-    if request.method =='POST':
-        username = request.form['userName']
-        password = request.form['password']
-
-        userQuery = create_user(username,password)
+        username = request.form['username']
+        room = request.form['room']
+        return render_template('chat.html',username=username, room=room)
         
-        if userQuery == 'USER_EXIST':
-            return render_template('index.html', alertMsg = 'user already exist with this username!')
-        else:
-            return render_template('index.html', alertMsg = 'user created successfully!')
+
+# socket methods -----------------------------------------------------
 
 
-@app.route('/createChat', methods= ['GET','POST'])
-def chat(): 
-    if request.method =='POST':
-        chat = request.form['chat']
-        username = request.form['userName']
 
-        create_chat(username,chat)
-        
-        chatList = get_chat()
-        
-        myChatList = [item for item in chatList if item['username'] == username]
-        strangerChatList = [item for item in chatList if item['username'] != username]
+@socketio.on('join')
+def on_join(data):
+    username = data['username']
+    room = data['room']
+    join_room(room)
+    create_room(room)
+    data['msg'] = username + ' has entered the room.'
+    send(data, to=room)
 
-                
-        return render_template('chat.html',username=username, myChatList=myChatList,strangerChatList=strangerChatList)   
+
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    room = data['room']
+    leave_room(room)
+
+    # rooms_collection.delete_many({})
+    data['msg'] = username + ' has left the room.'
+    send(data, to=room)
+
+@socketio.on('message')
+def handle_message(data):
+    room = data['room']
+    print(socketio)
+    send(data, to=room)
 
 
 # user defined methods ----------------------------------------------------
 
-# User model functions
-def create_user(username,password):
-    user = {
-        'username': username,
-        'password': password
-    }
-    existingUser = users_collection.find_one(user)
+def get_room():
+    rooms = rooms_collection.find()
+    return list(rooms)
+
+def create_room(room_id):
+
+    rooms = list(rooms_collection.find())
+
     
-    if existingUser :
-        return 'USER_EXIST'
-    else:
-        result = users_collection.insert_one(user)
-    return result.inserted_id  
+    existingRoom = rooms_collection.find_one({'roomID':room_id})
 
-# chat model functions
-def create_chat(username,chat):
-    chat = {
-        'username': username,
-        'chat':chat
-    }
-    result = chats_collection.insert_one(chat)
-    return result.inserted_id  
+    if not existingRoom :
+        rooms_collection.insert_one({'roomID':room_id})
+    return rooms
 
-def get_chat():
-    chats = chats_collection.find()
-    return list(chats)
+
 
 
 # main method ----------------------------------------------------
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app)
+    # app.run(host='0.0.0.0', port=5000, debug=True)
