@@ -116,12 +116,12 @@
       var joinedRoom = false; // Flag to track joining state
 
       socket.on('connect', () => {
-          if (!joinedRoom) { // Join only if not already joined
+          // if (!joinedRoom) { // Join only if not already joined
 
               socket.username = username;
               socket.emit('join', { username, room });
               joinedRoom = true;
-          }
+          // }
       });
 
       
